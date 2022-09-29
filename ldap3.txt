@@ -30,3 +30,122 @@ inetorgperson = ObjectDef(['person','user'], conn)
 reader = Reader(conn,inetorgperson,baseDn,search_filter)
 
 reader.search()
+
+=============================================================================
+
+##
+## This is a tiny syslog server that is able to receive UDP based syslog
+## entries on a specified port and save them to a file.
+## That's it... it does nothing else...
+## There are a few configuration parameters.
+
+LOG_FILE = 'youlogfile.log'
+HOST, PORT = "0.0.0.0", 514
+
+#
+# NO USER SERVICEABLE PARTS BELOW HERE...
+#
+
+import logging
+import socketserver
+
+logging.basicConfig(level=logging.INFO, format='%(message)s', datefmt='', filename=LOG_FILE, filemode='a')
+
+class SyslogUDPHandler(socketserver.BaseRequestHandler):
+
+    def handle(self):
+        data = bytes.decode(self.request[0].strip())
+        socket = self.request[1]
+        print( "%s : " % self.client_address[0], str(data))
+        logging.info(str(data))
+
+if __name__ == "__main__":
+    try:
+        server = socketserver.UDPServer((HOST,PORT), SyslogUDPHandler)
+        server.serve_forever(poll_interval=0.5)
+    except (IOError, SystemExit):
+        raise
+    except KeyboardInterrupt:
+        print ("Crtl+C Pressed. Shutting down.")
+
+===============================================================================
+
+#I was working on a project where we were using python to implement the Web API for a product. One sprint was to send output of our scripts as Syslog to our ArcSight Connector appliance. I wrote the below script .
+#
+#Just wanted to share if it helps anyone.
+#
+
+import logging
+
+import logging.handlers
+
+#Create you logger. Please note that this logger is different from  ArcSight logger.
+
+my_logger = logging.getLogger('MyLogger')
+
+#We will pass the message as INFO
+
+my_logger.setLevel(logging.INFO)
+
+#Define SyslogHandler
+
+handler = logging.handlers.SysLogHandler(address = ('X.X.X.X',514))
+
+#X.X.X.X =IP Address of the Syslog Collector(Connector Appliance,Loggers  etc.)
+
+#514 = Syslog port , You need to specify the port which you have defined ,by default it is 514 for Syslog)
+
+my_logger.addHandler(handler)
+
+#Example: We will pass values from a List
+
+List1 = ['Manchester','Chelsea','Arsenal']
+
+for row in List1:
+
+     my_logger.info("I was in " List1[0])
+
+
+
+#We can utilize this method to when we have a CSV to send as Syslog.
+
+
+
+#Step 1:     Import the CSV
+
+#Step 2:     Iterate through the CSV row wise
+
+#Step 3:     Send the whole row as syslog
+
+===============================================================================================
+
+import logging
+import logging.handlers
+import socket
+
+
+#Create you logger. Please note that this logger is different from  ArcSight logger.
+my_logger = logging.getLogger('MyLogger')
+
+#We will pass the message as INFO
+my_logger.setLevel(logging.INFO)
+
+#Define SyslogHandler
+
+#TCP
+handler = logging.handlers.SysLogHandler(address = ('localhost',515),  socktype=socket.SOCK_STREAM)
+
+#UDP
+#handler = logging.handlers.SysLogHandler(address = ('localhost',514),  socktype=socket.SOCK_DGRAM)
+
+#X.X.X.X =IP Address of the Syslog Collector(Connector Appliance,Loggers  etc.)
+
+#514 = Syslog port , You need to specify the port which you have defined ,by default it is 514 for Syslog)
+my_logger.addHandler(handler)
+
+#Example: We will pass values from a List
+List1 = ['Manchester','Chelsea','Arsenal']
+for row in List1:
+     my_logger.info("I was in "  row '\n')
+     my_logger.handlers[0].flush()
+     print ("I was in "  row '\n')
